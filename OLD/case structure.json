@@ -1,0 +1,4184 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "ontology_name": "POLE+",
+  "ontology_version": "0.2",
+  "artifact_type": "canonical_ontology_specification",
+  "status": "final_implementation_contract",
+  "scope": {
+    "primary_source": "10 FIR case corpus",
+    "design_basis": "Observed patterns in FIRs and attached State FIR/MHA-order material",
+    "purpose": "Evidence-first criminal-network analysis ontology for FIR ingestion, extraction, normalization, candidate linking, graph construction and grounded Q&A",
+    "out_of_scope_for_v0_2": [
+      "automatic adjudication of guilt",
+      "automatic legal equivalence determination",
+      "global identity resolution",
+      "unverified cross-case relationship inference",
+      "biometric identity",
+      "classified intelligence-only attributes not present in source",
+      "automated operational decision-making without human review",
+      "unbounded surveillance or collection policy",
+      "unsupported inference from absence of data"
+    ]
+  },
+  "design_principles": [
+    "Every derived assertion must remain traceable to source evidence.",
+    "Raw source values are immutable and must be retained alongside normalized values.",
+    "Extraction confidence and identity confidence are separate.",
+    "Document assertion, model inference and adjudicated fact are separate epistemic states.",
+    "Unknown entities are valid first-class entities.",
+    "Legal citations must not be silently converted or rewritten.",
+    "Cross-case identity links are candidates until independently resolved.",
+    "Events are first-class objects rather than implicit edges.",
+    "Provenance is part of the semantic model, not optional metadata."
+  ],
+  "id_policy": {
+    "format": "stable_prefixed_identifier",
+    "examples": [
+      "person:<stable-key>",
+      "org:<stable-key>",
+      "loc:<stable-key>",
+      "vehicle:<stable-key>",
+      "event:<stable-key>",
+      "obs:<stable-key>",
+      "rel:<stable-key>",
+      "lp:<stable-key>",
+      "lc:<stable-key>"
+    ],
+    "rules": [
+      "IDs must be stable across reprocessing when the same source entity is retained.",
+      "Raw document identifiers must never be used as the only identity key for a real-world entity.",
+      "Identity candidates use separate candidate-link identifiers until resolution."
+    ]
+  },
+  "epistemic_model": {
+    "states": [
+      {
+        "code": "OBSERVED",
+        "meaning": "Direct structural/document fact."
+      },
+      {
+        "code": "SOURCE_ASSERTION",
+        "meaning": "The source states or asserts the claim."
+      },
+      {
+        "code": "REPORTED",
+        "meaning": "Information reported by a person or secondary source inside the document."
+      },
+      {
+        "code": "ALLEGED",
+        "meaning": "An allegation; not an adjudicated finding."
+      },
+      {
+        "code": "SUSPECTED",
+        "meaning": "The source identifies a subject or association as suspected."
+      },
+      {
+        "code": "INFERRED",
+        "meaning": "Derived by the system from other observations."
+      },
+      {
+        "code": "RESOLVED",
+        "meaning": "Identity/entity resolution completed under the project's resolution rules."
+      },
+      {
+        "code": "UNRESOLVED",
+        "meaning": "The mention or entity could not be safely resolved."
+      },
+      {
+        "code": "UNVERIFIED",
+        "meaning": "Present as a claim/mention but not independently verified."
+      },
+      {
+        "code": "ADJUDICATED",
+        "meaning": "Established through a judicial/procedural source; not derivable from an FIR alone."
+      }
+    ]
+  },
+  "confidence_model": {
+    "fields": {
+      "extraction_confidence": {
+        "type": "number",
+        "range": [
+          0,
+          1
+        ],
+        "meaning": "Confidence that text was correctly extracted and typed."
+      },
+      "normalization_confidence": {
+        "type": "number",
+        "range": [
+          0,
+          1
+        ],
+        "meaning": "Confidence that raw value was normalized correctly."
+      },
+      "identity_confidence": {
+        "type": "number",
+        "range": [
+          0,
+          1
+        ],
+        "meaning": "Confidence that two mentions refer to the same real-world entity."
+      },
+      "relation_confidence": {
+        "type": "number",
+        "range": [
+          0,
+          1
+        ],
+        "meaning": "Confidence that a typed relation is supported."
+      },
+      "event_confidence": {
+        "type": "number",
+        "range": [
+          0,
+          1
+        ],
+        "meaning": "Confidence that an event and its arguments were correctly extracted."
+      },
+      "legal_resolution_confidence": {
+        "type": "number",
+        "range": [
+          0,
+          1
+        ],
+        "meaning": "Confidence that a raw legal citation maps to a canonical provision."
+      },
+      "geospatial_confidence": {
+        "type": "number",
+        "range": [
+          0,
+          1
+        ],
+        "meaning": "Confidence in location normalization/geocoding."
+      }
+    },
+    "rule": "A score must always be interpreted in the context of its field; do not create one universal confidence field."
+  },
+  "provenance_model": {
+    "required_fields": [
+      "observation_id",
+      "document_id",
+      "source_location",
+      "raw_text",
+      "extraction_model",
+      "model_version",
+      "ontology_version",
+      "created_at"
+    ],
+    "source_location": {
+      "supported": [
+        "page",
+        "line_span",
+        "character_span",
+        "section",
+        "paragraph"
+      ],
+      "rule": "At least one precise source locator should be retained."
+    },
+    "immutable_fields": [
+      "document_id",
+      "raw_text",
+      "source_location"
+    ]
+  },
+  "documents": {
+    "Document": {
+      "description": "Source artifact such as NIA FIR, State FIR, MHA order or annexure.",
+      "required": [
+        "document_id",
+        "document_type"
+      ],
+      "properties": {
+        "document_id": {
+          "type": "string"
+        },
+        "document_type": {
+          "enum": [
+            "FIR",
+            "GOVERNMENT_ORDER",
+            "ANNEXURE",
+            "STATEMENT",
+            "SEIZURE_MEMO",
+            "OTHER"
+          ]
+        },
+        "title": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "fir_number": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "order_number": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "issuing_authority": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "date": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "format": "date"
+        },
+        "jurisdiction": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "page_count": {
+          "type": [
+            "integer",
+            "null"
+          ],
+          "minimum": 1
+        },
+        "source_file_id": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "parent_document_id": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "annexure_label": {
+          "type": [
+            "string",
+            "null"
+          ]
+        }
+      }
+    },
+    "DocumentPage": {
+      "description": "Addressable page or page-like unit within a source document.",
+      "required": [
+        "document_page_id",
+        "document_id",
+        "page_number"
+      ],
+      "properties": {
+        "document_page_id": {
+          "type": "string"
+        },
+        "document_id": {
+          "type": "string"
+        },
+        "page_number": {
+          "type": "integer",
+          "minimum": 1
+        },
+        "raw_text": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "ocr_status": {
+          "enum": [
+            "NOT_REQUIRED",
+            "COMPLETED",
+            "PARTIAL",
+            "FAILED",
+            "REQUIRED"
+          ]
+        },
+        "ocr_model": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "image_hash": {
+          "type": [
+            "string",
+            "null"
+          ]
+        }
+      }
+    },
+    "DocumentSegment": {
+      "description": "Addressable textual or visual segment inside a document/page.",
+      "required": [
+        "document_segment_id",
+        "document_id"
+      ],
+      "properties": {
+        "document_segment_id": {
+          "type": "string"
+        },
+        "document_id": {
+          "type": "string"
+        },
+        "document_page_id": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "segment_type": {
+          "enum": [
+            "PARAGRAPH",
+            "SECTION",
+            "TABLE",
+            "HEADER",
+            "FOOTER",
+            "CAPTION",
+            "FORM_FIELD",
+            "IMAGE",
+            "OTHER"
+          ]
+        },
+        "raw_text": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "character_start": {
+          "type": [
+            "integer",
+            "null"
+          ]
+        },
+        "character_end": {
+          "type": [
+            "integer",
+            "null"
+          ]
+        },
+        "bounding_box": {
+          "type": [
+            "object",
+            "null"
+          ]
+        }
+      }
+    },
+    "MediaArtifact": {
+      "description": "Image, audio, video or other digital media artifact that can support observations.",
+      "required": [
+        "media_artifact_id",
+        "media_type"
+      ],
+      "properties": {
+        "media_artifact_id": {
+          "type": "string"
+        },
+        "media_type": {
+          "enum": [
+            "IMAGE",
+            "VIDEO",
+            "AUDIO",
+            "SCREENSHOT",
+            "FORENSIC_IMAGE",
+            "OTHER"
+          ]
+        },
+        "source_file_id": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "hash": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "duration_seconds": {
+          "type": [
+            "number",
+            "null"
+          ]
+        },
+        "capture_time": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "metadata": {
+          "type": "object"
+        }
+      }
+    }
+  },
+  "entities": {
+    "Person": {
+      "description": "A named, described or unknown human actor.",
+      "required": [
+        "person_id"
+      ],
+      "properties": {
+        "person_id": {
+          "type": "string"
+        },
+        "name_raw": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "name_normalized": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "aliases": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "parent_name": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "date_of_birth": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "format": "date"
+        },
+        "year_of_birth": {
+          "type": [
+            "integer",
+            "null"
+          ]
+        },
+        "age": {
+          "type": [
+            "integer",
+            "null"
+          ],
+          "minimum": 0
+        },
+        "gender": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "nationality": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "occupation": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "rank": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "service_number": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "phone_numbers": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/PhoneNumber"
+          }
+        },
+        "email_addresses": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "identification_documents": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/IdentificationDocument"
+          }
+        },
+        "addresses": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/Address"
+          }
+        },
+        "case_roles": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "status_in_case": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "epistemic_state": {
+          "type": "string"
+        },
+        "identity_resolution_status": {
+          "enum": [
+            "NOT_RUN",
+            "CANDIDATE",
+            "RESOLVED",
+            "CONFLICTED",
+            "UNRESOLVED"
+          ]
+        },
+        "identity_confidence": {
+          "type": [
+            "number",
+            "null"
+          ],
+          "minimum": 0,
+          "maximum": 1
+        }
+      }
+    },
+    "Organization": {
+      "description": "A formal or informal group, institution, unit or organization mentioned in source material.",
+      "required": [
+        "organization_id"
+      ],
+      "properties": {
+        "organization_id": {
+          "type": "string"
+        },
+        "name_raw": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "name_normalized": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "aliases": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "organization_type": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "status_as_stated": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "parent_organization_id": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "jurisdiction": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "country": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "epistemic_state": {
+          "type": "string"
+        }
+      }
+    },
+    "OrganizationUnit": {
+      "description": "Sub-unit, division, branch, battalion, committee or operational unit.",
+      "properties": {
+        "organization_unit_id": {
+          "type": "string"
+        },
+        "name_raw": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "parent_organization_id": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "unit_type": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "epistemic_state": {
+          "type": "string"
+        }
+      }
+    },
+    "Location": {
+      "description": "Physical or administrative place relevant to an event, person, asset or jurisdiction.",
+      "required": [
+        "location_id"
+      ],
+      "properties": {
+        "location_id": {
+          "type": "string"
+        },
+        "name_raw": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "name_normalized": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "location_type": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "house": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "street": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "locality": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "village": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "city": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "district": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "state": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "country": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "police_station": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "latitude": {
+          "type": [
+            "number",
+            "null"
+          ]
+        },
+        "longitude": {
+          "type": [
+            "number",
+            "null"
+          ]
+        },
+        "geocoding_confidence": {
+          "type": [
+            "number",
+            "null"
+          ],
+          "minimum": 0,
+          "maximum": 1
+        },
+        "parent_location_id": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "jurisdiction": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "raw_address": {
+          "type": [
+            "string",
+            "null"
+          ]
+        }
+      }
+    },
+    "Vehicle": {
+      "description": "Road vehicle or other vehicle explicitly represented in source material.",
+      "properties": {
+        "vehicle_id": {
+          "type": "string"
+        },
+        "vehicle_type": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "make": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "model": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "registration_number_raw": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "registration_number_normalized": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "color": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "owner_entity_id": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "driver_entity_id": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "occupant_entity_ids": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "status": {
+          "type": [
+            "string",
+            "null"
+          ]
+        }
+      }
+    },
+    "Weapon": {
+      "description": "Firearm or weapon represented in evidence or source narrative.",
+      "properties": {
+        "weapon_id": {
+          "type": "string"
+        },
+        "weapon_type": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "subtype": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "make": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "model": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "caliber_or_bore_raw": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "serial_number": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "quantity": {
+          "type": [
+            "number",
+            "null"
+          ],
+          "minimum": 0
+        },
+        "unit": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "status": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "epistemic_state": {
+          "type": "string"
+        }
+      }
+    },
+    "Ammunition": {
+      "description": "Cartridge, round or ammunition item.",
+      "properties": {
+        "ammunition_id": {
+          "type": "string"
+        },
+        "type_raw": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "caliber_or_specification": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "quantity": {
+          "type": [
+            "number",
+            "null"
+          ],
+          "minimum": 0
+        },
+        "unit": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "lot_or_marking": {
+          "type": [
+            "string",
+            "null"
+          ]
+        }
+      }
+    },
+    "Explosive": {
+      "description": "Explosive substance, explosive device, detonator, fuse, cord or related material.",
+      "properties": {
+        "explosive_id": {
+          "type": "string"
+        },
+        "explosive_type": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "subtype": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "brand": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "marking": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "quantity": {
+          "type": [
+            "number",
+            "null"
+          ],
+          "minimum": 0
+        },
+        "unit": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "weight": {
+          "type": [
+            "number",
+            "null"
+          ],
+          "minimum": 0
+        },
+        "weight_unit": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "batch_or_lot": {
+          "type": [
+            "string",
+            "null"
+          ]
+        }
+      }
+    },
+    "Narcotic": {
+      "description": "Controlled substance or narcotic represented in the source.",
+      "properties": {
+        "narcotic_id": {
+          "type": "string"
+        },
+        "substance_name_raw": {
+          "type": "string"
+        },
+        "substance_normalized": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "quantity": {
+          "type": [
+            "number",
+            "null"
+          ],
+          "minimum": 0
+        },
+        "unit": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "purity": {
+          "type": [
+            "number",
+            "null"
+          ],
+          "minimum": 0,
+          "maximum": 100
+        }
+      }
+    },
+    "Device": {
+      "description": "Physical communication, computing, storage or other device.",
+      "properties": {
+        "device_id": {
+          "type": "string"
+        },
+        "device_type": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "make": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "model": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "serial_or_identifier": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "phone_number": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "status": {
+          "type": [
+            "string",
+            "null"
+          ]
+        }
+      }
+    },
+    "DigitalEntity": {
+      "description": "Online account, handle, channel, post, video, image or platform-level digital source.",
+      "properties": {
+        "digital_entity_id": {
+          "type": "string"
+        },
+        "platform": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "handle_raw": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "handle_normalized": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "account_name": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "content_type": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "url": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "post_or_content_id": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "source_timestamp": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "epistemic_state": {
+          "type": "string"
+        }
+      }
+    },
+    "DocumentArtifact": {
+      "description": "Map, notebook, literature, photograph, video, digital file or other material artifact.",
+      "properties": {
+        "artifact_id": {
+          "type": "string"
+        },
+        "artifact_type": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "name_raw": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "description": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "hash": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "source_document_id": {
+          "type": [
+            "string",
+            "null"
+          ]
+        }
+      }
+    },
+    "FinancialEntity": {
+      "description": "Transaction, bank account, cash holding or payment instrument.",
+      "properties": {
+        "financial_entity_id": {
+          "type": "string"
+        },
+        "financial_type": {
+          "enum": [
+            "TRANSACTION",
+            "BANK_ACCOUNT",
+            "CASH",
+            "PAYMENT_INSTRUMENT",
+            "WALLET",
+            "OTHER"
+          ]
+        },
+        "identifier_raw": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "amount": {
+          "type": [
+            "number",
+            "null"
+          ],
+          "minimum": 0
+        },
+        "currency": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "date": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "sender_entity_id": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "recipient_entity_id": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "payment_method": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "status": {
+          "type": [
+            "string",
+            "null"
+          ]
+        }
+      }
+    },
+    "Property": {
+      "description": "Residence, building, land, premises or other property relevant to a case.",
+      "properties": {
+        "property_id": {
+          "type": "string"
+        },
+        "property_type": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "name_or_description": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "owner_entity_id": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "location_id": {
+          "type": [
+            "string",
+            "null"
+          ]
+        }
+      }
+    }
+  },
+  "events": {
+    "Event": {
+      "description": "Time-bounded or temporally anchored occurrence with participants, location, objects and outcomes.",
+      "required": [
+        "event_id",
+        "event_type"
+      ],
+      "properties": {
+        "event_id": {
+          "type": "string"
+        },
+        "event_type": {
+          "type": "string"
+        },
+        "start_time": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "end_time": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "date_precision": {
+          "enum": [
+            "EXACT",
+            "DAY",
+            "DAY_APPROXIMATE",
+            "MONTH",
+            "YEAR",
+            "UNKNOWN"
+          ]
+        },
+        "location_id": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "participant_entity_ids": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "target_entity_ids": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "object_entity_ids": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "actions": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "method": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "purpose": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "route": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "outcome": {
+          "type": "object"
+        },
+        "casualties": {
+          "type": "object"
+        },
+        "epistemic_state": {
+          "type": "string"
+        },
+        "event_confidence": {
+          "type": [
+            "number",
+            "null"
+          ],
+          "minimum": 0,
+          "maximum": 1
+        }
+      },
+      "controlled_event_types": [
+        "ATTACK",
+        "AMBUSH",
+        "EXPLOSION",
+        "FIR_REGISTRATION",
+        "NIA_CASE_RE_REGISTRATION",
+        "INVESTIGATION_DIRECTION",
+        "LEGAL_ADMINISTRATIVE_REVIEW",
+        "APPREHENSION",
+        "SEIZURE",
+        "SEARCH_AND_RECOVERY",
+        "RECOVERY",
+        "QUESTIONING",
+        "CONFESSION",
+        "TRAVEL",
+        "INTERNATIONAL_TRAVEL",
+        "BORDER_CROSSING",
+        "DEPORTATION",
+        "RETURN",
+        "PRESS_EVENT",
+        "SOCIAL_MEDIA_ACTIVITY",
+        "REWARD_DECLARATION",
+        "MAP_UNVEILING",
+        "WEAPON_SMUGGLING",
+        "ALLEGED_ARMS_SMUGGLING",
+        "PLANNED_ATTACK",
+        "GROUP_GATHERING",
+        "POLICE_INTERCEPTION",
+        "WEAPON_HIDING",
+        "MEDICAL_EVACUATION",
+        "FATALITY",
+        "ASSAULT_AND_DETENTION",
+        "PASSPORT_HANDOVER_AND_VISA",
+        "CREDIBLE_INFORMATION_RECEIVED"
+      ]
+    }
+  },
+  "legal": {
+    "LegalInstrument": {
+      "required": [
+        "legal_instrument_id"
+      ],
+      "properties": {
+        "legal_instrument_id": {
+          "type": "string"
+        },
+        "name_raw": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "name_normalized": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "abbreviation_raw": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "instrument_type": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "jurisdiction": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "enactment_year": {
+          "type": [
+            "integer",
+            "null"
+          ]
+        },
+        "effective_from": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "format": "date"
+        },
+        "effective_to": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "format": "date"
+        },
+        "resolution_status": {
+          "enum": [
+            "RESOLVED",
+            "UNRESOLVED",
+            "CANDIDATE"
+          ]
+        }
+      }
+    },
+    "LegalProvision": {
+      "required": [
+        "legal_provision_id"
+      ],
+      "properties": {
+        "legal_provision_id": {
+          "type": "string"
+        },
+        "legal_instrument_id": {
+          "type": "string"
+        },
+        "section_raw": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "section": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "subsection": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "clause": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "subclause_path": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "canonical_citation": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "title": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "legal_status": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "effective_from": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "format": "date"
+        },
+        "effective_to": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "format": "date"
+        },
+        "authoritative_source": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "legal_resolution_confidence": {
+          "type": [
+            "number",
+            "null"
+          ],
+          "minimum": 0,
+          "maximum": 1
+        }
+      }
+    },
+    "LegalCitation": {
+      "required": [
+        "legal_citation_id",
+        "raw_citation"
+      ],
+      "properties": {
+        "legal_citation_id": {
+          "type": "string"
+        },
+        "raw_citation": {
+          "type": "string"
+        },
+        "instrument_as_cited_raw": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "resolved_legal_instrument_id": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "resolved_provision_ids": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "citation_operator": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "resolution_status": {
+          "enum": [
+            "NOT_RESOLVED",
+            "RESOLVED",
+            "AMBIGUOUS",
+            "UNRESOLVED"
+          ]
+        },
+        "legal_resolution_confidence": {
+          "type": [
+            "number",
+            "null"
+          ],
+          "minimum": 0,
+          "maximum": 1
+        },
+        "provenance_observation_id": {
+          "type": [
+            "string",
+            "null"
+          ]
+        }
+      }
+    },
+    "LegalApplication": {
+      "required": [
+        "legal_application_id",
+        "case_id"
+      ],
+      "properties": {
+        "legal_application_id": {
+          "type": "string"
+        },
+        "case_id": {
+          "type": "string"
+        },
+        "legal_provision_id": {
+          "type": "string"
+        },
+        "application_type": {
+          "enum": [
+            "CITED_IN_FIR",
+            "CITED_IN_MHA_ORDER",
+            "ALLEGED_APPLICATION",
+            "INVESTIGATION_BASIS",
+            "CHARGED",
+            "CHARGE_SHEETED",
+            "TRIAL_APPLICATION",
+            "ADJUDICATED"
+          ]
+        },
+        "application_status": {
+          "type": "string"
+        },
+        "asserted_against_entity_ids": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "provenance_observation_id": {
+          "type": [
+            "string",
+            "null"
+          ]
+        }
+      }
+    },
+    "LegalCrosswalk": {
+      "required": [
+        "legal_crosswalk_id",
+        "from_provision_id",
+        "to_provision_id"
+      ],
+      "properties": {
+        "legal_crosswalk_id": {
+          "type": "string"
+        },
+        "from_provision_id": {
+          "type": "string"
+        },
+        "to_provision_id": {
+          "type": "string"
+        },
+        "relationship_type": {
+          "enum": [
+            "DIRECT_SUCCESSOR",
+            "PARTIAL_SUCCESSOR",
+            "CONSOLIDATES",
+            "SPLITS_INTO",
+            "DERIVED_FROM",
+            "AMENDED_VERSION",
+            "REPEALED_BY",
+            "SAVED_BY",
+            "NO_DIRECT_EQUIVALENT",
+            "PROCEDURAL_COUNTERPART",
+            "SEMANTICALLY_SIMILAR"
+          ]
+        },
+        "authority_source": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "verified": {
+          "type": "boolean"
+        },
+        "legal_resolution_confidence": {
+          "type": [
+            "number",
+            "null"
+          ],
+          "minimum": 0,
+          "maximum": 1
+        },
+        "notes": {
+          "type": [
+            "string",
+            "null"
+          ]
+        }
+      }
+    }
+  },
+  "observations": {
+    "Observation": {
+      "required": [
+        "observation_id",
+        "observation_type",
+        "document_id",
+        "raw_text",
+        "provenance"
+      ],
+      "properties": {
+        "observation_id": {
+          "type": "string"
+        },
+        "observation_type": {
+          "type": "string"
+        },
+        "document_id": {
+          "type": "string"
+        },
+        "raw_text": {
+          "type": "string"
+        },
+        "normalized_value": {},
+        "subject_entity_id": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "object_entity_id": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "event_id": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "extraction_confidence": {
+          "type": [
+            "number",
+            "null"
+          ],
+          "minimum": 0,
+          "maximum": 1
+        },
+        "normalization_confidence": {
+          "type": [
+            "number",
+            "null"
+          ],
+          "minimum": 0,
+          "maximum": 1
+        },
+        "epistemic_state": {
+          "type": "string"
+        },
+        "provenance": {
+          "$ref": "#/$defs/Provenance"
+        }
+      }
+    }
+  },
+  "relationships": {
+    "Relationship": {
+      "required": [
+        "relationship_id",
+        "relationship_type",
+        "source_entity_id",
+        "target_entity_id"
+      ],
+      "properties": {
+        "relationship_id": {
+          "type": "string"
+        },
+        "relationship_type": {
+          "type": "string"
+        },
+        "source_entity_id": {
+          "type": "string"
+        },
+        "target_entity_id": {
+          "type": "string"
+        },
+        "event_id": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "attributes": {
+          "type": "object"
+        },
+        "epistemic_state": {
+          "type": "string"
+        },
+        "relation_confidence": {
+          "type": [
+            "number",
+            "null"
+          ],
+          "minimum": 0,
+          "maximum": 1
+        },
+        "provenance_observation_ids": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "resolution_status": {
+          "enum": [
+            "OBSERVED",
+            "CANDIDATE",
+            "RESOLVED",
+            "REJECTED"
+          ]
+        }
+      }
+    },
+    "controlled_relationship_types": {
+      "Person_to_Organization": [
+        "AFFILIATED_WITH",
+        "ALLEGEDLY_AFFILIATED_WITH",
+        "HAS_ROLE_IN",
+        "MEMBER_OF",
+        "ASSOCIATED_WITH"
+      ],
+      "Person_to_Person": [
+        "ALIAS_OF",
+        "PARENT_OF",
+        "SPOUSE_OF",
+        "ASSOCIATE_OF",
+        "DIRECTED_BY",
+        "ALLEGEDLY_DIRECTED_BY"
+      ],
+      "Person_to_Object": [
+        "OWNS",
+        "POSSESSES",
+        "CARRIED",
+        "USED",
+        "TRAVELLED_IN",
+        "RECOVERED_FROM"
+      ],
+      "Person_to_Event": [
+        "PARTICIPATED_IN",
+        "HOSTED",
+        "TARGETED",
+        "VICTIM_OF",
+        "WITNESS_TO"
+      ],
+      "Organization_to_Event": [
+        "PARTICIPATED_IN",
+        "DIRECTED",
+        "CONVOY_OF",
+        "TARGETED"
+      ],
+      "Event_to_Location": [
+        "OCCURRED_AT",
+        "STARTED_AT",
+        "ENDED_AT",
+        "PASSED_THROUGH"
+      ],
+      "Event_to_Object": [
+        "INVOLVED",
+        "USED",
+        "RECOVERED",
+        "RESULTED_IN_RECOVERY"
+      ],
+      "Object_to_Object": [
+        "CONTAINED_IN",
+        "PART_OF",
+        "MOUNTED_ON",
+        "STORED_WITH"
+      ],
+      "Document_to_Anything": [
+        "MENTIONS",
+        "SUPPORTS",
+        "CITES",
+        "CONTAINS",
+        "HAS_ANNEXURE"
+      ],
+      "Legal": [
+        "CITES_PROVISION",
+        "REFERENCES_INSTRUMENT",
+        "APPLIES_TO_CASE",
+        "SUCCESSOR_TO",
+        "CROSSWALKS_TO"
+      ]
+    }
+  },
+  "supporting_types": {
+    "Address": {
+      "properties": {
+        "raw_address": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "house": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "street": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "locality": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "village": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "city": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "district": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "state": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "country": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "postal_code": {
+          "type": [
+            "string",
+            "null"
+          ]
+        }
+      }
+    },
+    "PhoneNumber": {
+      "properties": {
+        "raw": {
+          "type": "string"
+        },
+        "normalized": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "country_code": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "resolution_status": {
+          "enum": [
+            "UNRESOLVED",
+            "RESOLVED",
+            "CANDIDATE"
+          ]
+        },
+        "confidence": {
+          "type": [
+            "number",
+            "null"
+          ],
+          "minimum": 0,
+          "maximum": 1
+        }
+      }
+    },
+    "IdentificationDocument": {
+      "properties": {
+        "id_type": {
+          "type": "string"
+        },
+        "number_raw": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "number_normalized": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "issue_date": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "issue_place": {
+          "type": [
+            "string",
+            "null"
+          ]
+        }
+      }
+    },
+    "Provenance": {
+      "required": [
+        "document_id",
+        "source_location",
+        "raw_text",
+        "extraction_model",
+        "model_version",
+        "ontology_version",
+        "created_at"
+      ],
+      "properties": {
+        "document_id": {
+          "type": "string"
+        },
+        "source_location": {
+          "type": "object",
+          "properties": {
+            "page": {
+              "type": [
+                "integer",
+                "null"
+              ]
+            },
+            "line_start": {
+              "type": [
+                "integer",
+                "null"
+              ]
+            },
+            "line_end": {
+              "type": [
+                "integer",
+                "null"
+              ]
+            },
+            "character_start": {
+              "type": [
+                "integer",
+                "null"
+              ]
+            },
+            "character_end": {
+              "type": [
+                "integer",
+                "null"
+              ]
+            },
+            "section": {
+              "type": [
+                "string",
+                "null"
+              ]
+            },
+            "paragraph": {
+              "type": [
+                "string",
+                "null"
+              ]
+            }
+          }
+        },
+        "raw_text": {
+          "type": "string"
+        },
+        "extraction_model": {
+          "type": "string"
+        },
+        "model_version": {
+          "type": "string"
+        },
+        "ontology_version": {
+          "type": "string"
+        },
+        "created_at": {
+          "type": "string"
+        }
+      }
+    }
+  },
+  "case_layer": {
+    "Case": {
+      "required": [
+        "case_id"
+      ],
+      "properties": {
+        "case_id": {
+          "type": "string"
+        },
+        "nia_fir_number": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "underlying_fir_number": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "registration_date": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "format": "date"
+        },
+        "occurrence_start": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "occurrence_end": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "jurisdiction": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "district": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "state": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "police_station": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "status": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "document_ids": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        }
+      }
+    },
+    "Investigation": {
+      "required": [
+        "investigation_id"
+      ],
+      "properties": {
+        "investigation_id": {
+          "type": "string"
+        },
+        "case_ids": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "title": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "status": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "jurisdiction": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "created_at": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "owner_role": {
+          "type": [
+            "string",
+            "null"
+          ]
+        }
+      }
+    },
+    "InvestigationHypothesis": {
+      "required": [
+        "hypothesis_id",
+        "status"
+      ],
+      "properties": {
+        "hypothesis_id": {
+          "type": "string"
+        },
+        "title": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "description": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "status": {
+          "enum": [
+            "OPEN",
+            "UNDER_REVIEW",
+            "SUPPORTED",
+            "WEAKENED",
+            "REJECTED",
+            "CLOSED"
+          ]
+        },
+        "subject_entity_ids": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "supporting_assertion_ids": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "contradicting_assertion_ids": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "created_by": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "created_at": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "updated_at": {
+          "type": [
+            "string",
+            "null"
+          ]
+        }
+      }
+    }
+  },
+  "normalization_rules": [
+    {
+      "rule_id": "NR-001",
+      "target": "PERSON_NAME",
+      "rule": "Preserve exact raw name; normalized name may be added but never replace raw."
+    },
+    {
+      "rule_id": "NR-002",
+      "target": "ALIAS",
+      "rule": "Represent aliases as explicit observations/relations; do not treat alias similarity as cross-case identity."
+    },
+    {
+      "rule_id": "NR-003",
+      "target": "PHONE",
+      "rule": "Retain raw number and add normalized number separately."
+    },
+    {
+      "rule_id": "NR-004",
+      "target": "VEHICLE_REGISTRATION",
+      "rule": "Retain raw registration string and normalized representation separately."
+    },
+    {
+      "rule_id": "NR-005",
+      "target": "LOCATION",
+      "rule": "Decompose addresses without discarding the original address string."
+    },
+    {
+      "rule_id": "NR-006",
+      "target": "LEGAL_CITATION",
+      "rule": "Preserve exact citation text and source location; canonicalization is a separate resolution operation."
+    },
+    {
+      "rule_id": "NR-007",
+      "target": "QUANTITY",
+      "rule": "Preserve source unit and numeric value; normalized unit is additional."
+    },
+    {
+      "rule_id": "NR-008",
+      "target": "DATE_TIME",
+      "rule": "Preserve source precision; do not infer exact incident time from form metadata."
+    }
+  ],
+  "identity_resolution": {
+    "entity_types_supported": [
+      "Person",
+      "Organization",
+      "Location",
+      "Vehicle",
+      "Device",
+      "DigitalEntity"
+    ],
+    "candidate_features": [
+      "normalized_name",
+      "aliases",
+      "parent_name",
+      "date_of_birth_or_age",
+      "phone_number",
+      "address",
+      "organization_affiliation",
+      "service_number",
+      "vehicle_registration",
+      "digital_handle"
+    ],
+    "required_behavior": [
+      "Generate candidate links before asserting SAME_AS.",
+      "Record the evidence/features contributing to a candidate match.",
+      "Maintain positive and negative resolution decisions.",
+      "Do not use a single shared name as sufficient evidence for cross-case identity."
+    ],
+    "link_types": [
+      "SAME_ENTITY_CANDIDATE",
+      "SAME_ENTITY_CONFIRMED",
+      "NOT_SAME_ENTITY"
+    ]
+  },
+  "graph_constraints": [
+    "Every relationship must reference valid source and target entity IDs.",
+    "Every inferred relationship must have epistemic_state=INFERRED.",
+    "Every relationship sourced directly from a document should have at least one provenance observation.",
+    "Every legal citation must preserve raw_citation.",
+    "Every LegalCrosswalk must specify relationship_type and authority_source.",
+    "Unknown actors may be represented using stable unknown IDs and must not be silently resolved.",
+    "Event participants and targets must remain role-specific; do not collapse them into a generic connected_to edge.",
+    "A Case may reference many Documents; a Document may be an annexure of another Document.",
+    "A source assertion cannot be upgraded to ADJUDICATED solely by model inference.",
+    "Every assertion must reference at least one supporting observation unless its epistemic_state is OBSERVED and it is structural metadata.",
+    "Every inferred assertion must reference an Inference object.",
+    "Every identity confirmation must reference an IdentityCandidate with status=CONFIRMED and recorded supporting/contradicting evidence.",
+    "Every analytical result must preserve the input assertion/observation IDs that produced it.",
+    "Audit events are append-only and do not replace evidence provenance.",
+    "Raw source payloads and raw text are never overwritten by normalization."
+  ],
+  "v0_1_minimum_viable_graph": {
+    "nodes": [
+      "Case",
+      "Document",
+      "Person",
+      "Organization",
+      "OrganizationUnit",
+      "Location",
+      "Vehicle",
+      "Weapon",
+      "Ammunition",
+      "Explosive",
+      "Narcotic",
+      "Device",
+      "DigitalEntity",
+      "DocumentArtifact",
+      "FinancialEntity",
+      "Property",
+      "Event",
+      "LegalInstrument",
+      "LegalProvision",
+      "LegalCitation",
+      "LegalApplication",
+      "Observation",
+      "Source",
+      "SourceRecord",
+      "Acquisition",
+      "DocumentPage",
+      "DocumentSegment",
+      "MediaArtifact",
+      "EvidenceItem",
+      "Assertion",
+      "Investigation",
+      "InvestigationHypothesis",
+      "IdentityCandidate",
+      "Inference",
+      "AnalyticalResult"
+    ],
+    "required_edge_examples": [
+      "Case-HAS_DOCUMENT-Document",
+      "Document-MENTIONS-Person",
+      "Document-MENTIONS-Organization",
+      "Document-MENTIONS-Location",
+      "Document-MENTIONS-Event",
+      "Person-ALLEGEDLY_AFFILIATED_WITH-Organization",
+      "Person-PARTICIPATED_IN-Event",
+      "Event-OCCURRED_AT-Location",
+      "Event-INVOLVED-Object",
+      "Object-RECOVERED_FROM-LocationOrContainer",
+      "Document-CITES_PROVISION-LegalProvision",
+      "LegalApplication-APPLIES_TO_CASE-Case",
+      "Assertion-SUPPORTED_BY-Observation",
+      "Source-CONTAINS-SourceRecord",
+      "Document-HAS_PAGE-DocumentPage",
+      "DocumentPage-CONTAINS-DocumentSegment",
+      "SourceRecord-GENERATES-Observation",
+      "EvidenceItem-SUPPORTS-Assertion",
+      "EvidenceItem-CONTRADICTS-Assertion",
+      "Assertion-SUPPORTED_BY-Observation",
+      "Assertion-GENERATED_BY-Inference",
+      "IdentityCandidate-SUPPORTED_BY-Observation",
+      "Investigation-HAS_CASE-Case",
+      "InvestigationHypothesis-SUPPORTED_BY-Assertion",
+      "InvestigationHypothesis-CONTRADICTED_BY-Assertion"
+    ]
+  },
+  "validation_checks": {
+    "schema_checks": [
+      "No object without a stable ID.",
+      "No relationship without source and target IDs.",
+      "No legal citation without raw citation text.",
+      "No inferred relationship without inference status.",
+      "No normalized value without retaining raw value when source text exists.",
+      "No cross-case SAME_ENTITY_CONFIRMED link without recorded resolution evidence.",
+      "No source-derived fact without provenance.",
+      "No assertion without epistemic state.",
+      "No inference result without model/algorithm version.",
+      "No identity confirmation without candidate-link evidence.",
+      "No analytical result without traceable input IDs."
+    ],
+    "qa_metrics": [
+      "entity_extraction_precision",
+      "entity_extraction_recall",
+      "event_argument_f1",
+      "relation_f1",
+      "legal_citation_accuracy",
+      "legal_resolution_precision",
+      "identity_resolution_precision",
+      "provenance_completeness",
+      "unsupported_inference_rate",
+      "unknown_entity_preservation_rate"
+    ]
+  },
+  "implementation_order": [
+    "1. Validate the ontology JSON and supporting definitions with JSON Schema.",
+    "2. Register source, acquisition and source-record metadata before transformation.",
+    "3. Convert all source material into immutable Observation-first records.",
+    "4. Extract entities, attributes, events, relationships and legal citations with provenance.",
+    "5. Apply deterministic normalization while preserving raw source values.",
+    "6. Generate candidate identity links and record positive/negative resolution evidence separately.",
+    "7. Construct Assertions from validated observations; keep epistemic state explicit.",
+    "8. Project validated assertions into the typed graph with schema/domain constraints.",
+    "9. Run temporal, spatial, corroboration, contradiction and network analytics.",
+    "10. Represent model-derived results through explicit Inference objects.",
+    "11. Provide evidence-grounded Q&A and relationship explanations that resolve to source spans.",
+    "12. Enforce access policy, audit logging and retention controls in deployment.",
+    "13. Run extraction, relation, identity, provenance and unsupported-inference QA before release."
+  ],
+  "source_corpus_notes": {
+    "case_count": 10,
+    "reason_for_multi_case_design": "The corpus provides variation needed to generalize the ontology across trafficking, narcotics, weapons, explosives, terrorist attacks, social-media activity, military/security attacks, financial observations, vehicles, casualties, and unknown actors.",
+    "important_caveat": "This ontology is a v0.1 prototype based on the supplied FIR corpus. It should be revised if later documents introduce materially new entities or semantics."
+  },
+  "$defs": {
+    "Address": {
+      "type": "object",
+      "properties": {
+        "raw_address": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "house": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "street": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "locality": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "village": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "city": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "district": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "state": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "country": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "postal_code": {
+          "type": [
+            "string",
+            "null"
+          ]
+        }
+      }
+    },
+    "PhoneNumber": {
+      "type": "object",
+      "required": [
+        "raw"
+      ],
+      "properties": {
+        "raw": {
+          "type": "string"
+        },
+        "normalized": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "country_code": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "resolution_status": {
+          "type": "string"
+        },
+        "confidence": {
+          "type": [
+            "number",
+            "null"
+          ],
+          "minimum": 0,
+          "maximum": 1
+        }
+      }
+    },
+    "IdentificationDocument": {
+      "type": "object",
+      "required": [
+        "id_type"
+      ],
+      "properties": {
+        "id_type": {
+          "type": "string"
+        },
+        "number_raw": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "number_normalized": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "issue_date": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "issue_place": {
+          "type": [
+            "string",
+            "null"
+          ]
+        }
+      }
+    },
+    "Provenance": {
+      "type": "object",
+      "required": [
+        "document_id",
+        "source_location",
+        "raw_text",
+        "extraction_model",
+        "model_version",
+        "ontology_version",
+        "created_at"
+      ],
+      "properties": {
+        "document_id": {
+          "type": "string"
+        },
+        "source_location": {
+          "type": "object"
+        },
+        "raw_text": {
+          "type": "string"
+        },
+        "extraction_model": {
+          "type": "string"
+        },
+        "model_version": {
+          "type": "string"
+        },
+        "ontology_version": {
+          "type": "string"
+        },
+        "created_at": {
+          "type": "string"
+        }
+      }
+    },
+    "Source": {
+      "description": "Originating system, authority, provider, agency or collection source.",
+      "required": [
+        "source_id",
+        "source_type"
+      ],
+      "properties": {
+        "source_id": {
+          "type": "string"
+        },
+        "source_type": {
+          "type": "string"
+        },
+        "provider_or_agency": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "system_name": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "jurisdiction": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "authority_reference": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "reliability_class": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "active_from": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "active_to": {
+          "type": [
+            "string",
+            "null"
+          ]
+        }
+      }
+    },
+    "SourceRecord": {
+      "description": "Immutable record as received from an originating source before semantic transformation.",
+      "required": [
+        "source_record_id",
+        "source_id",
+        "source_type"
+      ],
+      "properties": {
+        "source_record_id": {
+          "type": "string"
+        },
+        "source_id": {
+          "type": "string"
+        },
+        "source_type": {
+          "type": "string"
+        },
+        "source_file_id": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "record_locator": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "raw_payload_hash": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "raw_payload": {},
+        "schema_version": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "received_at": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "ingested_at": {
+          "type": [
+            "string",
+            "null"
+          ]
+        }
+      }
+    },
+    "Acquisition": {
+      "description": "Metadata describing how a source artifact or record entered the system.",
+      "required": [
+        "acquisition_id",
+        "acquired_at"
+      ],
+      "properties": {
+        "acquisition_id": {
+          "type": "string"
+        },
+        "acquired_at": {
+          "type": "string"
+        },
+        "acquired_by": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "authority_reference": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "source_file_id": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "file_hash": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "original_filename": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "storage_uri": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "chain_of_custody_reference": {
+          "type": [
+            "string",
+            "null"
+          ]
+        }
+      }
+    },
+    "DocumentPage": {
+      "description": "Addressable page or page-like unit within a source document.",
+      "required": [
+        "document_page_id",
+        "document_id",
+        "page_number"
+      ],
+      "properties": {
+        "document_page_id": {
+          "type": "string"
+        },
+        "document_id": {
+          "type": "string"
+        },
+        "page_number": {
+          "type": "integer",
+          "minimum": 1
+        },
+        "raw_text": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "ocr_status": {
+          "enum": [
+            "NOT_REQUIRED",
+            "COMPLETED",
+            "PARTIAL",
+            "FAILED",
+            "REQUIRED"
+          ]
+        },
+        "ocr_model": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "image_hash": {
+          "type": [
+            "string",
+            "null"
+          ]
+        }
+      }
+    },
+    "DocumentSegment": {
+      "description": "Addressable textual or visual segment inside a document/page.",
+      "required": [
+        "document_segment_id",
+        "document_id"
+      ],
+      "properties": {
+        "document_segment_id": {
+          "type": "string"
+        },
+        "document_id": {
+          "type": "string"
+        },
+        "document_page_id": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "segment_type": {
+          "enum": [
+            "PARAGRAPH",
+            "SECTION",
+            "TABLE",
+            "HEADER",
+            "FOOTER",
+            "CAPTION",
+            "FORM_FIELD",
+            "IMAGE",
+            "OTHER"
+          ]
+        },
+        "raw_text": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "character_start": {
+          "type": [
+            "integer",
+            "null"
+          ]
+        },
+        "character_end": {
+          "type": [
+            "integer",
+            "null"
+          ]
+        },
+        "bounding_box": {
+          "type": [
+            "object",
+            "null"
+          ]
+        }
+      }
+    },
+    "MediaArtifact": {
+      "description": "Image, audio, video or other digital media artifact that can support observations.",
+      "required": [
+        "media_artifact_id",
+        "media_type"
+      ],
+      "properties": {
+        "media_artifact_id": {
+          "type": "string"
+        },
+        "media_type": {
+          "enum": [
+            "IMAGE",
+            "VIDEO",
+            "AUDIO",
+            "SCREENSHOT",
+            "FORENSIC_IMAGE",
+            "OTHER"
+          ]
+        },
+        "source_file_id": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "hash": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "duration_seconds": {
+          "type": [
+            "number",
+            "null"
+          ]
+        },
+        "capture_time": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "metadata": {
+          "type": "object"
+        }
+      }
+    },
+    "EvidenceItem": {
+      "description": "A source artifact or source record item explicitly used to support or contradict an assertion.",
+      "required": [
+        "evidence_id",
+        "evidence_type"
+      ],
+      "properties": {
+        "evidence_id": {
+          "type": "string"
+        },
+        "evidence_type": {
+          "type": "string"
+        },
+        "document_id": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "source_record_id": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "media_artifact_id": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "observation_ids": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "reliability_context": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "supports_assertion_ids": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "contradicts_assertion_ids": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        }
+      }
+    },
+    "Assertion": {
+      "description": "Semantic claim connecting one or more entities/events, explicitly grounded in observations.",
+      "required": [
+        "assertion_id",
+        "subject_entity_id",
+        "predicate"
+      ],
+      "properties": {
+        "assertion_id": {
+          "type": "string"
+        },
+        "subject_entity_id": {
+          "type": "string"
+        },
+        "predicate": {
+          "type": "string"
+        },
+        "object_entity_id": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "event_id": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "epistemic_state": {
+          "type": "string"
+        },
+        "relation_confidence": {
+          "type": [
+            "number",
+            "null"
+          ],
+          "minimum": 0,
+          "maximum": 1
+        },
+        "supporting_observation_ids": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "contradicting_observation_ids": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "inference_id": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "created_at": {
+          "type": "string"
+        }
+      }
+    },
+    "Investigation": {
+      "required": [
+        "investigation_id"
+      ],
+      "properties": {
+        "investigation_id": {
+          "type": "string"
+        },
+        "case_ids": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "title": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "status": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "jurisdiction": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "created_at": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "owner_role": {
+          "type": [
+            "string",
+            "null"
+          ]
+        }
+      }
+    },
+    "InvestigationHypothesis": {
+      "required": [
+        "hypothesis_id",
+        "status"
+      ],
+      "properties": {
+        "hypothesis_id": {
+          "type": "string"
+        },
+        "title": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "description": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "status": {
+          "enum": [
+            "OPEN",
+            "UNDER_REVIEW",
+            "SUPPORTED",
+            "WEAKENED",
+            "REJECTED",
+            "CLOSED"
+          ]
+        },
+        "subject_entity_ids": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "supporting_assertion_ids": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "contradicting_assertion_ids": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "created_by": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "created_at": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "updated_at": {
+          "type": [
+            "string",
+            "null"
+          ]
+        }
+      }
+    },
+    "IdentityCandidate": {
+      "required": [
+        "candidate_link_id",
+        "entity_a_id",
+        "entity_b_id",
+        "status"
+      ],
+      "properties": {
+        "candidate_link_id": {
+          "type": "string"
+        },
+        "entity_a_id": {
+          "type": "string"
+        },
+        "entity_b_id": {
+          "type": "string"
+        },
+        "status": {
+          "enum": [
+            "CANDIDATE",
+            "CONFIRMED",
+            "REJECTED"
+          ]
+        },
+        "features": {
+          "type": "object"
+        },
+        "supporting_observation_ids": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "contradicting_observation_ids": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "identity_confidence": {
+          "type": [
+            "number",
+            "null"
+          ],
+          "minimum": 0,
+          "maximum": 1
+        },
+        "decision_reason": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "reviewed_by": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "reviewed_at": {
+          "type": [
+            "string",
+            "null"
+          ]
+        }
+      }
+    },
+    "Inference": {
+      "required": [
+        "inference_id",
+        "inference_type",
+        "algorithm",
+        "model_version"
+      ],
+      "properties": {
+        "inference_id": {
+          "type": "string"
+        },
+        "inference_type": {
+          "type": "string"
+        },
+        "algorithm": {
+          "type": "string"
+        },
+        "model_version": {
+          "type": "string"
+        },
+        "input_assertion_ids": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "input_observation_ids": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "output_relationship_ids": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "output_assertion_ids": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "features": {
+          "type": "object"
+        },
+        "created_at": {
+          "type": "string"
+        },
+        "human_review_status": {
+          "enum": [
+            "NOT_REVIEWED",
+            "REVIEWED",
+            "REJECTED"
+          ]
+        },
+        "reviewer_id": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "review_notes": {
+          "type": [
+            "string",
+            "null"
+          ]
+        }
+      }
+    },
+    "AnalyticalResult": {
+      "required": [
+        "result_id",
+        "result_type",
+        "epistemic_state"
+      ],
+      "properties": {
+        "result_id": {
+          "type": "string"
+        },
+        "result_type": {
+          "type": "string"
+        },
+        "epistemic_state": {
+          "type": "string"
+        },
+        "entity_ids": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "assertion_ids": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "observation_ids": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "score_components": {
+          "type": "object"
+        },
+        "explanation": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "created_at": {
+          "type": "string"
+        }
+      }
+    },
+    "AccessPolicy": {
+      "properties": {
+        "classification": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "case_scope": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "allowed_roles": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "purpose_codes": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "retention_policy_id": {
+          "type": [
+            "string",
+            "null"
+          ]
+        }
+      }
+    },
+    "AuditEvent": {
+      "required": [
+        "audit_event_id",
+        "actor_id",
+        "action",
+        "occurred_at"
+      ],
+      "properties": {
+        "audit_event_id": {
+          "type": "string"
+        },
+        "actor_id": {
+          "type": "string"
+        },
+        "action": {
+          "type": "string"
+        },
+        "target_type": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "target_id": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "reason": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "occurred_at": {
+          "type": "string"
+        },
+        "before_hash": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "after_hash": {
+          "type": [
+            "string",
+            "null"
+          ]
+        }
+      }
+    },
+    "RetentionPolicy": {
+      "required": [
+        "retention_policy_id"
+      ],
+      "properties": {
+        "retention_policy_id": {
+          "type": "string"
+        },
+        "retention_class": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "retain_until": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "disposal_rule": {
+          "type": [
+            "string",
+            "null"
+          ]
+        }
+      }
+    }
+  },
+  "source_layer": {
+    "Source": {
+      "description": "Originating system, authority, provider, agency or collection source.",
+      "required": [
+        "source_id",
+        "source_type"
+      ],
+      "properties": {
+        "source_id": {
+          "type": "string"
+        },
+        "source_type": {
+          "type": "string"
+        },
+        "provider_or_agency": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "system_name": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "jurisdiction": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "authority_reference": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "reliability_class": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "active_from": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "active_to": {
+          "type": [
+            "string",
+            "null"
+          ]
+        }
+      }
+    },
+    "SourceRecord": {
+      "description": "Immutable record as received from an originating source before semantic transformation.",
+      "required": [
+        "source_record_id",
+        "source_id",
+        "source_type"
+      ],
+      "properties": {
+        "source_record_id": {
+          "type": "string"
+        },
+        "source_id": {
+          "type": "string"
+        },
+        "source_type": {
+          "type": "string"
+        },
+        "source_file_id": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "record_locator": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "raw_payload_hash": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "raw_payload": {},
+        "schema_version": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "received_at": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "ingested_at": {
+          "type": [
+            "string",
+            "null"
+          ]
+        }
+      }
+    },
+    "Acquisition": {
+      "description": "Metadata describing how a source artifact or record entered the system.",
+      "required": [
+        "acquisition_id",
+        "acquired_at"
+      ],
+      "properties": {
+        "acquisition_id": {
+          "type": "string"
+        },
+        "acquired_at": {
+          "type": "string"
+        },
+        "acquired_by": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "authority_reference": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "source_file_id": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "file_hash": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "original_filename": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "storage_uri": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "chain_of_custody_reference": {
+          "type": [
+            "string",
+            "null"
+          ]
+        }
+      }
+    }
+  },
+  "evidence_layer": {
+    "EvidenceItem": {
+      "description": "A source artifact or source record item explicitly used to support or contradict an assertion.",
+      "required": [
+        "evidence_id",
+        "evidence_type"
+      ],
+      "properties": {
+        "evidence_id": {
+          "type": "string"
+        },
+        "evidence_type": {
+          "type": "string"
+        },
+        "document_id": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "source_record_id": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "media_artifact_id": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "observation_ids": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "reliability_context": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "supports_assertion_ids": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "contradicts_assertion_ids": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        }
+      }
+    },
+    "Assertion": {
+      "description": "Semantic claim connecting one or more entities/events, explicitly grounded in observations.",
+      "required": [
+        "assertion_id",
+        "subject_entity_id",
+        "predicate"
+      ],
+      "properties": {
+        "assertion_id": {
+          "type": "string"
+        },
+        "subject_entity_id": {
+          "type": "string"
+        },
+        "predicate": {
+          "type": "string"
+        },
+        "object_entity_id": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "event_id": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "epistemic_state": {
+          "type": "string"
+        },
+        "relation_confidence": {
+          "type": [
+            "number",
+            "null"
+          ],
+          "minimum": 0,
+          "maximum": 1
+        },
+        "supporting_observation_ids": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "contradicting_observation_ids": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "inference_id": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "created_at": {
+          "type": "string"
+        }
+      }
+    }
+  },
+  "resolution_layer": {
+    "IdentityCandidate": {
+      "required": [
+        "candidate_link_id",
+        "entity_a_id",
+        "entity_b_id",
+        "status"
+      ],
+      "properties": {
+        "candidate_link_id": {
+          "type": "string"
+        },
+        "entity_a_id": {
+          "type": "string"
+        },
+        "entity_b_id": {
+          "type": "string"
+        },
+        "status": {
+          "enum": [
+            "CANDIDATE",
+            "CONFIRMED",
+            "REJECTED"
+          ]
+        },
+        "features": {
+          "type": "object"
+        },
+        "supporting_observation_ids": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "contradicting_observation_ids": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "identity_confidence": {
+          "type": [
+            "number",
+            "null"
+          ],
+          "minimum": 0,
+          "maximum": 1
+        },
+        "decision_reason": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "reviewed_by": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "reviewed_at": {
+          "type": [
+            "string",
+            "null"
+          ]
+        }
+      }
+    }
+  },
+  "inference_layer": {
+    "Inference": {
+      "required": [
+        "inference_id",
+        "inference_type",
+        "algorithm",
+        "model_version"
+      ],
+      "properties": {
+        "inference_id": {
+          "type": "string"
+        },
+        "inference_type": {
+          "type": "string"
+        },
+        "algorithm": {
+          "type": "string"
+        },
+        "model_version": {
+          "type": "string"
+        },
+        "input_assertion_ids": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "input_observation_ids": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "output_relationship_ids": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "output_assertion_ids": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "features": {
+          "type": "object"
+        },
+        "created_at": {
+          "type": "string"
+        },
+        "human_review_status": {
+          "enum": [
+            "NOT_REVIEWED",
+            "REVIEWED",
+            "REJECTED"
+          ]
+        },
+        "reviewer_id": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "review_notes": {
+          "type": [
+            "string",
+            "null"
+          ]
+        }
+      }
+    },
+    "AnalyticalResult": {
+      "required": [
+        "result_id",
+        "result_type",
+        "epistemic_state"
+      ],
+      "properties": {
+        "result_id": {
+          "type": "string"
+        },
+        "result_type": {
+          "type": "string"
+        },
+        "epistemic_state": {
+          "type": "string"
+        },
+        "entity_ids": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "assertion_ids": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "observation_ids": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "score_components": {
+          "type": "object"
+        },
+        "explanation": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "created_at": {
+          "type": "string"
+        }
+      }
+    }
+  },
+  "governance": {
+    "AccessPolicy": {
+      "properties": {
+        "classification": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "case_scope": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "allowed_roles": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "purpose_codes": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "retention_policy_id": {
+          "type": [
+            "string",
+            "null"
+          ]
+        }
+      }
+    },
+    "AuditEvent": {
+      "required": [
+        "audit_event_id",
+        "actor_id",
+        "action",
+        "occurred_at"
+      ],
+      "properties": {
+        "audit_event_id": {
+          "type": "string"
+        },
+        "actor_id": {
+          "type": "string"
+        },
+        "action": {
+          "type": "string"
+        },
+        "target_type": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "target_id": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "reason": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "occurred_at": {
+          "type": "string"
+        },
+        "before_hash": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "after_hash": {
+          "type": [
+            "string",
+            "null"
+          ]
+        }
+      }
+    },
+    "RetentionPolicy": {
+      "required": [
+        "retention_policy_id"
+      ],
+      "properties": {
+        "retention_policy_id": {
+          "type": "string"
+        },
+        "retention_class": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "retain_until": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "disposal_rule": {
+          "type": [
+            "string",
+            "null"
+          ]
+        }
+      }
+    }
+  }
+}
