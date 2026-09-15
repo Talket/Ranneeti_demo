@@ -1,11 +1,473 @@
 ﻿<!DOCTYPE html>
-<html lang=en>
-<link rel="stylesheet" href="styles.css">
-<meta charset=UTF-8>
-<meta name=viewport content="width=device-width, initial-scale=1.0">
-<title>VYUHA â€” Criminal Network Analysis</title>
-<script>!function () { var e = document.createElement("link"); e.rel = "stylesheet", e.href = "https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Roboto+Mono:wght@400;500&display=swap", document.head.appendChild(e) }();</script>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Investigation Document Intake</title>
+    <style>
+      :root {
+        --bg: #121826;
+        --panel: #1b2435;
+        --panel-alt: #273244;
+        --line: #39475f;
+        --primary: #4da3ff;
+        --success: #2ec27e;
+        --warning: #f7b267;
+        --text: #edf3ff;
+        --muted: #a8b4c7;
+      }
 
-<body>
-    <div id=root></div>
-    <script type="module" src="script.js"></script>
+      * { box-sizing: border-box; }
+
+      body {
+        margin: 0;
+        font-family: Arial, Helvetica, sans-serif;
+        background: var(--bg);
+        color: var(--text);
+      }
+
+      .page {
+        max-width: 1200px;
+        margin: 0 auto;
+        padding: 32px 20px 80px;
+      }
+
+      .header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        gap: 20px;
+        margin-bottom: 28px;
+        padding-bottom: 16px;
+        border-bottom: 1px solid var(--line);
+      }
+
+      h1 {
+        margin: 0;
+        font-size: clamp(28px, 3vw, 44px);
+      }
+
+      .pill {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        background: rgba(77, 163, 255, 0.12);
+        border: 1px solid rgba(77, 163, 255, 0.6);
+        border-radius: 999px;
+        padding: 8px 14px;
+        color: var(--primary);
+        font-size: 12px;
+        font-weight: 700;
+        letter-spacing: 0.08em;
+        text-transform: uppercase;
+      }
+
+      .grid {
+        display: grid;
+        grid-template-columns: 1.1fr 0.9fr;
+        gap: 24px;
+      }
+
+      .panel {
+        background: var(--panel);
+        border: 1px solid var(--line);
+        border-radius: 18px;
+        padding: 20px;
+      }
+
+      .panel h2 {
+        margin: 0 0 18px;
+        font-size: 20px;
+      }
+
+      .upload-box {
+        border: 2px dashed var(--line);
+        border-radius: 16px;
+        padding: 30px 18px;
+        text-align: center;
+        background: rgba(255, 255, 255, 0.02);
+      }
+
+      input[type="file"] {
+        width: 100%;
+        padding: 12px 14px;
+        border-radius: 12px;
+        background: var(--panel-alt);
+        color: var(--text);
+        border: 1px solid var(--line);
+      }
+
+      button {
+        cursor: pointer;
+        border: none;
+        border-radius: 12px;
+        padding: 12px 18px;
+        font-weight: 700;
+        transition: transform 0.15s ease, opacity 0.15s ease;
+      }
+
+      button:hover { transform: translateY(-1px); }
+      button:disabled { opacity: 0.55; cursor: not-allowed; }
+
+      .primary {
+        background: var(--primary);
+        color: white;
+      }
+
+      .secondary {
+        background: transparent;
+        border: 1px solid var(--line);
+        color: var(--text);
+      }
+
+      .success {
+        background: rgba(46, 194, 126, 0.12);
+        border: 1px solid rgba(46, 194, 126, 0.6);
+        color: var(--success);
+      }
+
+      .actions {
+        display: flex;
+        gap: 12px;
+        margin-top: 18px;
+        flex-wrap: wrap;
+      }
+
+      textarea {
+        width: 100%;
+        min-height: 260px;
+        resize: vertical;
+        background: rgba(0, 0, 0, 0.18);
+        border: 1px solid var(--line);
+        color: var(--text);
+        border-radius: 14px;
+        padding: 16px;
+        font-size: 14px;
+        line-height: 1.6;
+      }
+
+      .status {
+        display: grid;
+        grid-template-columns: repeat(3, minmax(0, 1fr));
+        gap: 14px;
+        margin-top: 16px;
+      }
+
+      .status-card {
+        background: var(--panel-alt);
+        border: 1px solid var(--line);
+        border-radius: 14px;
+        padding: 14px;
+        min-height: 92px;
+      }
+
+      .label {
+        color: var(--muted);
+        font-size: 12px;
+        letter-spacing: 0.08em;
+        text-transform: uppercase;
+      }
+
+      .value {
+        margin-top: 8px;
+        font-weight: 700;
+        font-size: 18px;
+      }
+
+      .output {
+        margin-top: 20px;
+        background: rgba(0, 0, 0, 0.18);
+        border: 1px solid var(--line);
+        border-radius: 14px;
+        padding: 16px;
+        white-space: pre-wrap;
+        min-height: 120px;
+        color: var(--text);
+      }
+
+      .docs-list {
+        margin-top: 22px;
+        display: grid;
+        gap: 12px;
+      }
+
+      .doc-item {
+        background: rgba(255,255,255,0.02);
+        border: 1px solid var(--line);
+        border-radius: 12px;
+        padding: 12px 14px;
+      }
+
+      .doc-head {
+        display: flex;
+        justify-content: space-between;
+        gap: 12px;
+        align-items: center;
+      }
+
+      .doc-name {
+        font-weight: 700;
+      }
+
+      .status-badge {
+        border-radius: 999px;
+        padding: 4px 8px;
+        font-size: 11px;
+        letter-spacing: 0.08em;
+        text-transform: uppercase;
+        border: 1px solid var(--line);
+        color: var(--text);
+      }
+
+      .meta {
+        margin-top: 16px;
+        color: var(--muted);
+        font-size: 13px;
+      }
+
+      @media (max-width: 860px) {
+        .grid { grid-template-columns: 1fr; }
+        .header { flex-direction: column; align-items: flex-start; }
+        .status { grid-template-columns: 1fr; }
+      }
+    </style>
+  </head>
+  <body>
+    <div class="page">
+      <div class="header">
+        <h1>Document Intake Prototype</h1>
+        <span class="pill">Raspberry Pi + PostgreSQL</span>
+      </div>
+
+      <div class="grid">
+        <div class="panel">
+          <h2>1. Upload document</h2>
+          <div class="upload-box">
+            <input id="fileInput" type="file" accept=".txt,.pdf,.docx,.png,.jpg,.jpeg" />
+            <div class="actions">
+              <button id="uploadBtn" class="primary">Upload to Raspberry Pi</button>
+            </div>
+          </div>
+
+          <div class="meta" id="uploadMeta">No file uploaded yet.</div>
+
+          <div style="margin-top: 24px;">
+            <h2 style="margin-bottom: 12px;">2. Review extracted text</h2>
+            <textarea id="reviewText" placeholder="Extracted document text will appear here for investigator approval."></textarea>
+            <div class="actions">
+              <button id="approveBtn" class="success" disabled>Approve & save to database</button>
+              <button id="processBtn" class="secondary" disabled>Send to reasoning LLM</button>
+            </div>
+          </div>
+        </div>
+
+        <div class="panel">
+          <h2>Workflow status</h2>
+          <div class="status">
+            <div class="status-card">
+              <div class="label">Upload</div>
+              <div class="value" id="stepUpload">Waiting</div>
+            </div>
+            <div class="status-card">
+              <div class="label">Approval</div>
+              <div class="value" id="stepApprove">Waiting</div>
+            </div>
+            <div class="status-card">
+              <div class="label">LLM JSON</div>
+              <div class="value" id="stepJson">Waiting</div>
+            </div>
+          </div>
+
+          <div class="output" id="resultOutput">No results yet.</div>
+
+          <div style="margin-top: 22px;">
+            <h2 style="margin-bottom: 12px;">Document history</h2>
+            <div id="documentsList" class="docs-list"></div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <script>
+      // Set window.PI_API_URL before this script when the UI is hosted elsewhere.
+      const API_BASE = window.PI_API_URL || (
+        window.location.protocol === 'file:' || window.location.origin === 'null'
+          ? 'http://127.0.0.1:8000'
+          : window.location.origin
+      );
+      const fileInput = document.getElementById('fileInput');
+      const uploadBtn = document.getElementById('uploadBtn');
+      const approveBtn = document.getElementById('approveBtn');
+      const processBtn = document.getElementById('processBtn');
+      const reviewText = document.getElementById('reviewText');
+      const uploadMeta = document.getElementById('uploadMeta');
+      const resultOutput = document.getElementById('resultOutput');
+      const documentsList = document.getElementById('documentsList');
+
+      let uploadedDocumentId = null;
+
+      function setStatus(id, value) {
+        document.getElementById(id).textContent = value;
+      }
+
+      async function readApiResponse(response) {
+        const body = await response.text();
+        let data = null;
+
+        if (body.trim()) {
+          try {
+            data = JSON.parse(body);
+          } catch (error) {
+            throw new Error(`API returned non-JSON response (${response.status}): ${body.slice(0, 160)}`);
+          }
+        }
+
+        if (!response.ok) {
+          throw new Error(data?.detail || `API request failed with status ${response.status}`);
+        }
+
+        if (!data) {
+          throw new Error(`API returned an empty response (${response.status})`);
+        }
+
+        return data;
+      }
+
+      function renderDocumentList(documents) {
+        if (!documents || documents.length === 0) {
+          documentsList.innerHTML = '<div class="doc-item">No documents uploaded yet.</div>';
+          return;
+        }
+
+        documentsList.innerHTML = documents.map(doc => {
+          const jsonPreview = doc.json_output ? JSON.stringify(doc.json_output).slice(0, 90) + '...' : 'No JSON yet';
+          return `
+            <div class="doc-item">
+              <div class="doc-head">
+                <div class="doc-name">${doc.file_name}</div>
+                <span class="status-badge">${doc.status}</span>
+              </div>
+              <div class="meta">ID: ${doc.id} • Text: ${doc.approved_text ? 'approved' : 'pending review'}</div>
+              <div class="meta">JSON: ${jsonPreview}</div>
+            </div>
+          `;
+        }).join('');
+      }
+
+      async function loadDocuments() {
+        try {
+          const response = await fetch(`${API_BASE}/api/documents`);
+          const docs = await readApiResponse(response);
+          renderDocumentList(docs);
+        } catch (error) {
+          documentsList.innerHTML = '<div class="doc-item">Unable to load document history.</div>';
+        }
+      }
+
+      async function uploadFile() {
+        const file = fileInput.files[0];
+        if (!file) {
+          resultOutput.textContent = 'Please choose a file to upload first.';
+          return;
+        }
+
+        uploadBtn.disabled = true;
+        setStatus('stepUpload', 'Uploading');
+        resultOutput.textContent = 'Uploading to the Raspberry Pi and extracting text...';
+
+        const formData = new FormData();
+        formData.append('file', file);
+
+        try {
+          const response = await fetch(`${API_BASE}/api/upload`, {
+            method: 'POST',
+            body: formData,
+          });
+
+          const data = await readApiResponse(response);
+
+          uploadedDocumentId = data.id;
+          reviewText.value = data.extracted_text;
+          uploadMeta.textContent = `Uploaded: ${data.file_name} | Status: ${data.status}`;
+          setStatus('stepUpload', 'Done');
+          approveBtn.disabled = false;
+          processBtn.disabled = false;
+          resultOutput.textContent = JSON.stringify({
+            message: data.message,
+            document_id: data.id,
+            file_name: data.file_name,
+          }, null, 2);
+          await loadDocuments();
+        } catch (error) {
+          resultOutput.textContent = `Upload error: ${error.message}`;
+          setStatus('stepUpload', 'Failed');
+        } finally {
+          uploadBtn.disabled = false;
+        }
+      }
+
+      async function approveDocument() {
+        if (!uploadedDocumentId) {
+          resultOutput.textContent = 'Please upload a file first.';
+          return;
+        }
+
+        approveBtn.disabled = true;
+        setStatus('stepApprove', 'Approving');
+        resultOutput.textContent = 'Approving the extracted text and storing the document in the database...';
+
+        try {
+          const response = await fetch(`${API_BASE}/api/documents/${uploadedDocumentId}/approve`, {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({ approved_text: reviewText.value }),
+          });
+          const data = await readApiResponse(response);
+
+          setStatus('stepApprove', 'Approved');
+          resultOutput.textContent = JSON.stringify(data, null, 2);
+          await loadDocuments();
+        } catch (error) {
+          resultOutput.textContent = `Approval error: ${error.message}`;
+          setStatus('stepApprove', 'Failed');
+        } finally {
+          approveBtn.disabled = false;
+        }
+      }
+
+      async function processDocument() {
+        if (!uploadedDocumentId) {
+          resultOutput.textContent = 'Please upload a document first.';
+          return;
+        }
+
+        processBtn.disabled = true;
+        setStatus('stepJson', 'Processing');
+        resultOutput.textContent = 'Sending approved content to the reasoning LLM and saving JSON to the database...';
+
+        try {
+          const response = await fetch(`${API_BASE}/api/documents/${uploadedDocumentId}/process`, {
+            method: 'POST',
+          });
+          const data = await readApiResponse(response);
+
+          setStatus('stepJson', 'Complete');
+          resultOutput.textContent = JSON.stringify(data, null, 2);
+          await loadDocuments();
+        } catch (error) {
+          resultOutput.textContent = `Processing error: ${error.message}`;
+          setStatus('stepJson', 'Failed');
+        } finally {
+          processBtn.disabled = false;
+        }
+      }
+
+      uploadBtn.addEventListener('click', uploadFile);
+      approveBtn.addEventListener('click', approveDocument);
+      processBtn.addEventListener('click', processDocument);
+      loadDocuments();
+    </script>
+  </body>
+</html>

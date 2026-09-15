@@ -1,0 +1,145 @@
+users	Login identities and officer-profile info shown in the app header/account UI.	user_id	Unique ID used to link a user to cases, approvals, and audit records.
+		username	Login name used to sign in.
+		display_name	Human-readable name shown in the app and audit history.
+		role	Controls what the user can do (officer / viewer / admin), used by the Reviews page to gate actions.
+		badge_id	Officer badge number, rendered in the app header.
+		division	Officer's division, rendered in the account/profile info.
+		station	Officer's station, rendered next to badge_id in the header.
+		password_hash	Stores the protected password for secure login; never the plain password.
+		status	Marks whether the account is active or disabled.
+		created_at	Records when the account was created.
+		last_login_at	Tracks the latest successful login for activity monitoring.
+auth_logs	History of login, logout, and failed login attempts.	auth_log_id	Unique ID for each authentication event.
+		user_id	Identifies which user the event belongs to; nullable for an unknown failed login.
+		event_type	States whether the event was a login, logout, or failed login.
+		success	Shows whether the authentication attempt succeeded.
+		occurred_at	Records exactly when the event happened.
+cases	Main case record shown on the Cases page.	case_id	Unique ID used to connect documents, entities, and reviews to this case.
+		case_number	Official case number (e.g. NCRB-2026-0143) shown throughout the app.
+		title	Short case name displayed on the Cases page.
+		description	Case summary entered during case creation.
+		status	Current case state (active / pending_review / closed), used for filtering.
+		priority	High/medium/low priority used for sorting and filtering cases in the UI.
+		area	Free-text location shown on the case card, matching how the UI actually displays it.
+		lead_officer_id	The investigating officer assigned to the case, shown on the case card.
+		created_by	Identifies who created the case record.
+		created_at	Records when the case was created.
+		updated_at	Records when the case was last changed, used for 'last updated' display.
+documents	Uploaded evidence files and the officer-approved OCR text, for the Documents page.	document_id	Unique ID for each uploaded document.
+		case_id	Connects the document to its case.
+		file_name	Original file name shown to the user.
+		file_type	Document format (e.g. PDF, image), shown in the file list.
+		storage_path	Tells the backend where the original file is stored.
+		file_hash	Detects duplicate uploads and verifies the file hasn't changed.
+		processing_status	Tracks the document's stage in the upload -> OCR -> approval pipeline.
+		pi_job_id	Links the document to the Raspberry Pi job that performed OCR.
+		approved_ocr_text	Officer-confirmed OCR text; the only text ever sent to Qwen for extraction.
+		ocr_approved_by	Records which officer approved the OCR text.
+		ocr_approved_at	Records when the OCR text was approved.
+		created_by	Records who uploaded the document.
+		created_at	Records when the document was uploaded.
+extraction_runs	One row per Qwen entity/relationship extraction call, for traceability.	extraction_run_id	Unique ID for each extraction execution.
+		document_id	Identifies which approved document text was analyzed.
+		case_id	Connects the extraction run to its case.
+		triggered_by	Identifies which user started the extraction.
+		model_name	Records which model produced the extraction (e.g. qwen3.5:9b).
+		status	Shows whether the run is pending, succeeded, or failed.
+		raw_output_json	Preserves Qwen's exact JSON output before any human edits, for audit purposes.
+		started_at	Records when the extraction began.
+		completed_at	Records when the extraction finished.
+		error_message	Stores the failure reason when a run fails, shown to the user.
+entities	AI-suggested and officer-verified entities shown in the investigation graph.	entity_id	Unique ID for each entity.
+		case_id	Connects the entity to its case.
+		entity_type	Entity category (PERSON, LOCATION, VEHICLE, etc.) used for icons/filtering in the graph.
+		name	Canonical name or value shown in the graph.
+		alias	Alternate name shown alongside the entity when the case identifies one.
+		influence_score	Drives the influence value shown/ranked for an entity in the graph.
+		state	Tracks whether the entity is only AI-suggested or officer-verified/authoritative.
+		attributes_json	Stores type-specific details without needing separate columns per entity type.
+		extraction_run_id	Traces which extraction run produced this entity, if AI-generated.
+		created_by	Identifies who created the entity (officer or system, via extraction_run_id).
+		created_at	Records when the entity record was created.
+		verified_by	Records which officer approved the entity as authoritative — required once state = verified.
+		verified_at	Records when the entity was verified — required once state = verified.
+		deleted_by	Records which officer removed the entity from the investigation view.
+		deleted_at	Records when the entity was deleted.
+relationships	AI-suggested and officer-verified edges in the investigation graph, and the Review queue's Relationships tab.	relationship_id	Unique ID for each relationship.
+		case_id	Connects the relationship to its case.
+		source_entity_id	The entity where the relationship starts.
+		target_entity_id	The entity where the relationship ends.
+		relationship_type	Controlled relationship label (WORKS_FOR, MET, USES, etc.) shown on the graph edge.
+		state	Tracks whether the edge is only AI-suggested, verified, or rejected — drives the Review queue.
+		confidence	AI confidence score shown next to suggested relationships.
+		reasoning	Human-readable explanation shown for why the relationship was suggested.
+		source_type	Identifies the evidence type behind the relationship (e.g. FIR, CDR).
+		source_ref	Points to the specific supporting source reference.
+		recorded_on	Date associated with the relationship's supporting evidence, when relevant.
+		extraction_run_id	Traces which extraction run produced this relationship, if AI-generated.
+		created_by	Identifies who created the relationship record.
+		verified_by	Records which officer approved the relationship — required once state = verified.
+		verified_at	Records when the relationship was approved.
+		created_at	Records when the relationship record was created.
+duplicate_candidates	Pending duplicate-entity suggestions on the Review queue's 'Duplicate entities' tab.	duplicate_id	Unique ID for each duplicate-candidate pair.
+		case_id	Connects the duplicate candidate to its case.
+		entity_a_id	One of the two entities suspected of being the same real-world person/thing.
+		entity_b_id	The other entity in the suspected duplicate pair.
+		status	Tracks the reviewer's decision: pending, merged, kept separate, or deferred (later).
+		resolved_by	Identifies the officer who made the merge/keep-separate/later decision.
+		resolved_at	Records when the decision was made.
+		created_at	Records when the duplicate candidate was flagged.
+missing_links	Unresolved or proposed links on the Review queue's 'Missing links' tab.	missing_link_id	Unique ID for each missing-link record.
+		case_id	Connects the missing link to its case.
+		source_entity_id	The known entity anchoring the proposed link.
+		target_entity_id	The other entity in the proposed link, when already identified.
+		suggested_relationship_type	The relationship type suggested for the missing link.
+		evidence_text	The evidence shown to the investigator for deciding if the link is real.
+		status	Shows whether the missing link is open, resolved, or rejected.
+		suggested_by_run_id	Traces which extraction run proposed the missing link, when applicable.
+		resolved_by	Identifies the officer who resolved the item.
+		resolved_at	Records when the item was resolved.
+		created_at	Records when the missing-link item was created.
+alerts	System-generated alerts shown on the Alerts page.	alert_id	Unique ID for each alert.
+		case_id	Links the alert to a case, when applicable.
+		entity_id	Links the alert to the specific entity involved, when applicable.
+		severity	Drives the critical/warning/info icon and color shown on each alert.
+		status	Tracks the alert through open, reviewing, and resolved, matching the page's filter tabs.
+		title	Short alert heading shown in the list.
+		description	Detailed alert text shown under the title.
+		reasoning	Explanation of why the alert fired, shown as 'Why:' in the UI.
+		created_at	Used to sort alerts by recency.
+		resolved_by	Identifies the officer who reviewed/resolved the alert.
+		resolved_at	Records when the alert was resolved.
+checklist_items	Per-officer assigned tasks on the Personal Checklist page.	checklist_item_id	Unique ID for each task.
+		assigned_to	The officer this task is assigned to; drives 'my checklist'.
+		case_id	Links the task to a case, when relevant; nullable since not every task is case-linked.
+		task	The task description shown in the checklist.
+		status	Tracks pending / in_progress / done, matching the page's open vs completed sections.
+		priority	High/medium/low priority badge shown next to each task.
+		assigned_by	Free text (named officer or 'System — review queue') shown as who assigned the task.
+		due_date	Due date shown next to each open task.
+		created_at	Records when the task was created.
+		completed_at	Records when the task was marked done.
+predictions	Event predictions shown on the Predictions page.	prediction_id	Unique ID for each prediction.
+		case_id	Connects the prediction to its case.
+		model_name	Records which model generated the prediction.
+		prediction_type	Identifies the kind of event being predicted.
+		predicted_event	The event text shown on the Predictions page.
+		probability	The model's predicted probability, shown alongside the prediction.
+		explanation	Human-readable explanation shown with the prediction.
+		status	Shows whether the prediction is still active or closed.
+		created_at	Records when the prediction was generated.
+prediction_outcomes	Real-world results entered through the 'Log outcome' action.	outcome_id	Unique ID for each recorded outcome.
+		prediction_id	Connects the outcome to the prediction it evaluates.
+		outcome_status	Whether the predicted event occurred, did not occur, or is unknown.
+		actual_outcome	Free text describing what actually happened.
+		outcome_notes	Additional investigator notes about the result.
+		submitted_by	Identifies who logged the outcome.
+		submitted_at	Records when the outcome was logged.
+audit_logs	One central audit trail for important actions across the system.	audit_log_id	Unique ID for each audit event.
+		user_id	Identifies who performed the audited action.
+		case_id	Connects the audited action to a case, when applicable.
+		action	The specific action taken (e.g. CASE_CREATED, DOCUMENT_APPROVED).
+		target_type	Identifies what kind of record was changed (case, entity, document, etc.).
+		target_id	Identifies the specific record affected by the action.
+		changes	Stores the relevant before/after values for traceability, when applicable.
+		created_at	Records exactly when the audited action occurred.

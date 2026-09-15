@@ -1,0 +1,16 @@
+[Unit]
+Description=Investigation document intake API
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=simple
+User=pi
+WorkingDirectory=/opt/demo_web
+EnvironmentFile=/opt/demo_web/backend/.env
+ExecStart=/opt/demo_web/.venv/bin/uvicorn backend.app:app --host 0.0.0.0 --port 8000
+Restart=always
+RestartSec=5
+
+[Install]
+WantedBy=multi-user.target
