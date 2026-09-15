@@ -3,7 +3,7 @@ from pathlib import Path
 
 import requests
 
-BACKEND_URL = os.getenv("BACKEND_URL", "http://localhost:5500")
+BACKEND_URL = os.getenv("BACKEND_URL", "http://192.168.137.9:5500")
 
 
 def upload_document_to_backend(file_path: str | Path):

@@ -1,0 +1,6 @@
+backend/vyuha.db
+backend/uploads/
+uploads/
+__pycache__/
+backend/__pycache__/
+*.py[cod]

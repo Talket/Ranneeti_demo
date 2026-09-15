@@ -9102,7 +9102,7 @@ var s = a("dtVek"),
     }
 }(), o = a("i0LTC");
 var s = a("dtVek");
-let c = "http://192.168.137.29:8000",
+let c = "http://192.168.137.9:5500",
     u = [".pdf", ".jpg", ".jpeg", ".png", ".tif", ".tiff", ".bmp", ".webp"];
 
 function d(e) {
@@ -12431,18 +12431,18 @@ function eY({
     onApprovePage: r,
     canEdit: a
 }) {
-    let [l, o] = (0, s.useState)(0), [u, d] = (0, s.useState)({}), f = (e.result?.pages ?? [])[l];
+    let [l, o] = (0, s.useState)(0), [u, d] = (0, s.useState)({}), [f, p] = (0, s.useState)(!1), [h, m] = (0, s.useState)(""), [x, g] = (0, s.useState)(!1), v = (e.result?.pages ?? [])[l];
     return (0, s.useEffect)(() => {
-        f && d(e => {
-            if (void 0 !== e[f.page]) return e;
-            let t = f.stage3 ?? {},
-                n = t.source_text ?? t.reconstructed_text ?? f.extracted_text ?? "";
+        v && d(e => {
+            if (void 0 !== e[v.page]) return e;
+            let t = v.stage3 ?? {},
+                n = t.source_text ?? t.reconstructed_text ?? v.extracted_text ?? "";
             return {
                 ...e,
-                [f.page]: n
+                [v.page]: n
             }
         })
-    }, [f?.page]), (0, i.jsx)(q, {
+    }, [v?.page]), (0, i.jsx)(q, {
         title: "Raspberry Pi processing",
         actions: (0, i.jsx)("button", {
             onClick: n,
@@ -12568,6 +12568,52 @@ function eY({
                             children: [(0, i.jsx)(eA, {
                                 className: "h-3.5 w-3.5"
                             }), " Approved â€” added to case raw data and the review queue"]
+                        }), (0, i.jsxs)("div", {
+                            className: "space-y-2 pt-2",
+                            children: [(0, i.jsxs)(W, {
+                                onClick: async () => {
+                                    let n = e.result?.document_id ?? e.result?.id;
+                                    let a = u[e.result.pages[l].page] ?? "";
+                                    if (!n || !a.trim()) return;
+                                    p(!0), m("");
+                                    try {
+                                        let t = await fetch(`${AI_API_BASE_URL}/api/documents/${n}/approve`, {
+                                            method: "POST",
+                                            headers: {
+                                                "Content-Type": "application/json"
+                                            },
+                                            body: JSON.stringify({
+                                                approved_text: a
+                                            })
+                                        });
+                                        if (!t.ok) {
+                                            let n = await t.text();
+                                            throw new Error(`Approval rejected by backend (${t.status}): ${n || "unknown error"}`)
+                                        }
+                                        let n = await fetch(`${AI_API_BASE_URL}/api/documents/${n}/process`, {
+                                            method: "POST"
+                                        });
+                                        if (!n.ok) {
+                                            let t = await n.text();
+                                            throw new Error(`LLM processing failed (${n.status}): ${t || "unknown error"}`)
+                                        }
+                                        let r = await n.json();
+                                        g(!0), console.log("Reasoning LLM result saved:", r)
+                                    } catch (t) {
+                                        m(t instanceof Error ? t.message : "Failed to send the approved text to the reasoning model."), console.error("LLM processing error:", t)
+                                    } finally {
+                                        p(!1)
+                                    }
+                                },
+                                disabled: f,
+                                children: f ? "Sending to reasoning model..." : "Send approved text to reasoning model"
+                            }), h && (0, i.jsx)("p", {
+                                className: "text-[10.5px] text-ncrb-red",
+                                children: h
+                            }), x && (0, i.jsx)("p", {
+                                className: "text-[10.5px] text-ncrb-green",
+                                children: "Approved text was sent to the reasoning model and saved successfully."
+                            })]
                         }), (0, i.jsx)(eG, {
                             documentName: e.fileName,
                             page: e.result.pages[l].page

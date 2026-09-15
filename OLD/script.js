@@ -9102,7 +9102,7 @@
 //     }
 // }(), o = a("i0LTC");
 // var s = a("dtVek");
-// let c = "http://192.168.137.9:8000",
+// let c = "http://192.168.137.9:5500",
 //     u = [".pdf", ".jpg", ".jpeg", ".png", ".tif", ".tiff", ".bmp", ".webp"];
 
 // function d(e) {
@@ -13813,61 +13813,6 @@
 //         y: 0,
 //         k: 1
 //     }), [x, g] = (0, s.useState)(null), y = (0, s.useRef)(!1), [b, v] = (0, s.useState)(new Map), [k, w] = (0, s.useState)(null), N = (0, s.useRef)(null);
-//     (0, s.useEffect)(() => {
-//         v(new Map)
-//     }, [n]);
-//     let j = e => b.get(e) ?? n.get(e),
-//         S = (0, s.useMemo)(() => {
-//             let n = new Map;
-//             return e.forEach(e => n.set(e.id, 0)), t.forEach(e => {
-//                 n.set(e.source, (n.get(e.source) ?? 0) + 1), n.set(e.target, (n.get(e.target) ?? 0) + 1)
-//             }), n
-//         }, [e, t]);
-
-//     function C(e) {
-//         m(t => ({
-//             ...t,
-//             k: Math.min(2.4, Math.max(.3, t.k * e))
-//         }))
-//     }
-
-//     function E() {
-//         m({
-//             x: 0,
-//             y: 0,
-//             k: 1
-//         })
-//     }
-
-//     function _() {
-//         g(null), w(null)
-//     }
-//     p && (p.current = {
-//         zoomIn: () => C(1.2),
-//         zoomOut: () => C(1 / 1.2),
-//         fit: function() {
-//             let t = e.map(e => j(e.id)).filter(e => !!e);
-//             if (0 === t.length) return void E();
-//             let n = Math.min(...t.map(e => e.x)) - 60,
-//                 r = Math.max(...t.map(e => e.x)) + 60,
-//                 a = Math.min(...t.map(e => e.y)) - 60,
-//                 l = Math.max(...t.map(e => e.y)) + 60,
-//                 i = Math.min(2.4, Math.max(.3, Math.min(d / Math.max(1, r - n), f / Math.max(1, l - a))));
-//             m({
-//                 k: i,
-//                 x: d / 2 - (n + r) / 2 * i,
-//                 y: f / 2 - (a + l) / 2 * i
-//             })
-//         },
-//         reset: E
-//     });
-//     let P = new Set(e.map(e => e.id));
-//     return (0, i.jsxs)("svg", {
-//         ref: N,
-//         width: d,
-//         height: f,
-//         onWheel: function(e) {
-//             e.preventDefault(), C(e.deltaY < 0 ? 1.08 : 1 / 1.08)
 //         },
 //         onMouseDown: function(e) {
 //             y.current = !1, g({
@@ -24897,7 +24842,7 @@ var s = a("dtVek"),
     }
 }(), o = a("i0LTC");
 var s = a("dtVek");
-let c = "http://192.168.137.9:8000",
+let c = globalThis.PI_API_URL || (globalThis.location && globalThis.location.origin !== "null" ? globalThis.location.origin : "http://127.0.0.1:8000"),
     u = [".pdf", ".jpg", ".jpeg", ".png", ".tif", ".tiff", ".bmp", ".webp"];
 // Base URL of the FastAPI + Ollama AI extraction backend (backend/main.py).
 // Change this if that backend runs on another host/port (e.g. on the Pi itself).
@@ -25987,12 +25932,23 @@ function _({
             }, l.upload.onload = () => {
                 n(100), r()
             }, l.onload = () => {
-                let t = null;
+				let t = null,
+					responseText = l.responseText || "";
                 try {
-                    t = JSON.parse(l.responseText)
+					t = JSON.parse(responseText)
                 } catch {
-                    a(new f("The Raspberry Pi returned a response that wasn't valid JSON."));
-                    return
+					if (l.status >= 200 && l.status < 300 && responseText.trim()) {
+						t = {
+							document_type: "text",
+							status: "success",
+							total_pages: 1,
+							processing_summary: { pages_successful: 1, pages_failed: 0, total_processing_time: 0 },
+							pages: [{ page: 1, status: "success", page_processing_time: 0, errors: [], extracted_text: responseText, stage3: { source_text: responseText } }]
+						};
+					} else {
+						a(new f(`The Raspberry Pi returned an unreadable response (HTTP ${l.status}).`));
+						return
+					}
                 }
                 l.status >= 200 && l.status < 300 ? e(t) : 413 === l.status ? a(new f(t?.detail ?? "File exceeds the Pi's maximum upload size.")) : 415 === l.status ? a(new f(t?.detail ?? "The Pi rejected this file as an unsupported format.")) : 400 === l.status ? a(new f(t?.detail ?? "The Pi rejected the request (400).")) : l.status >= 500 ? a(new f(t?.error ?? `The Pi failed while processing this document (HTTP ${l.status}).`)) : a(new f(t?.detail ?? t?.error ?? `Unexpected response from the Pi (HTTP ${l.status}).`))
             }, l.onerror = () => {
@@ -28169,18 +28125,18 @@ function eY({
     onApprovePage: r,
     canEdit: a
 }) {
-    let [l, o] = (0, s.useState)(0), [u, d] = (0, s.useState)({}), f = (e.result?.pages ?? [])[l];
+    let [l, o] = (0, s.useState)(0), [u, d] = (0, s.useState)({}), [f, p] = (0, s.useState)(!1), [h, m] = (0, s.useState)(""), [x, g] = (0, s.useState)(!1), v = (e.result?.pages ?? [])[l];
     return (0, s.useEffect)(() => {
-        f && d(e => {
-            if (void 0 !== e[f.page]) return e;
-            let t = f.stage3 ?? {},
-                n = t.source_text ?? t.reconstructed_text ?? f.extracted_text ?? "";
+        v && d(e => {
+            if (void 0 !== e[v.page]) return e;
+            let t = v.stage3 ?? {},
+                n = t.source_text ?? t.reconstructed_text ?? v.extracted_text ?? "";
             return {
                 ...e,
-                [f.page]: n
+                [v.page]: n
             }
         })
-    }, [f?.page]), (0, i.jsx)(q, {
+    }, [v?.page]), (0, i.jsx)(q, {
         title: "Raspberry Pi processing",
         actions: (0, i.jsx)("button", {
             onClick: n,
